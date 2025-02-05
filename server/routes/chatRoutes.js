@@ -10,6 +10,7 @@ router.get('/rooms', (req, res) => {
     res.sendFile(dirname + "/view/chatRooms.html");
 })
 
+/*
 router.get('/message/direct', async (req, res) => {
     const {user1, user2} = req.query;
     if (!user1|| !user2) {
@@ -22,7 +23,8 @@ router.get('/message/direct', async (req, res) => {
     ]});
     return res.status(200).json(messages);
 });
-
+*/
+/*
 router.post('/message/direct', async (req, res) => {
     const {from_user, to_user, message} = req.body;
     try {
@@ -36,5 +38,6 @@ router.post('/message/direct', async (req, res) => {
         console.log(err);
     }
 })
+*/
 
 export default router;

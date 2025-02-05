@@ -9,6 +9,7 @@ function handleLogin(e) {
 }
 
 function login(credentials) {
+    // make request to login endpoint
     fetch("http://localhost:3000/login", {
         method: "POST",
         headers: {
@@ -18,6 +19,7 @@ function login(credentials) {
     })
     .then(res => {
         if (res.ok) {
+            // successful response -> parse data
             return res.json();
         }
         throw new Error("Could not log-in: " + res.message);
@@ -25,10 +27,13 @@ function login(credentials) {
     .then(data => {
         console.log(data);
         if (!data.token) {
+            // token must be provided in response
             throw new Error("Token not provided");
         }
+        // set session variables
         localStorage.setItem("labtest01_token", data.token);
         localStorage.setItem("labtest01_username", data.username);
+        // redirect to home page (rooms)
         window.location.replace("http://localhost:3000/rooms");
     })
     .catch(err => {

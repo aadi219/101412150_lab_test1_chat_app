@@ -8,32 +8,31 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <h1>Hello From chat rooms!</h1>
-    <div class="d-flex flex-row">
-        <div style="width: 30%; height: 100%">
-            <h2>Online Users</h2>
+    <div class="d-flex flex-row bg-dark" style="height:100vh;">
+        <div style="width: 30%; height: 100%" class="mx-2">
+            <h2 class="text-white">Online Users</h2>
             <div id="users">
             </div>
-            <h2>Groups</h2>
-            <ul class="d-flex flex-column">
-                <li class="btn btn-success" onclick="joinRoom('devops', 'devops', 'group')">Devops</li>
-                <li class="btn btn-success" onclick="joinRoom('cloud_computing', 'cloud_computing', 'group')">Cloud Computing</li>
-                <li class="btn btn-success" onclick="joinRoom('covid19', 'covid19', 'group')">Covid19</li>
-                <li class="btn btn-success" onclick="joinRoom('sports', 'sports', 'group')">Sports</li>
-                <li class="btn btn-success" onclick="joinRoom('nodejs', 'nodejs', 'group')">NodeJS</li>
+            <h2 class="text-white">Groups</h2>
+            <ul class="d-flex flex-column align-items-center px-0 gap-2">
+                <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('devops', 'devops', 'group')">Devops</li>
+                <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('cloud_computing', 'cloud_computing', 'group')">Cloud Computing</li>
+                <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('covid19', 'covid19', 'group')">Covid19</li>
+                <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('sports', 'sports', 'group')">Sports</li>
+                <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('nodejs', 'nodejs', 'group')">NodeJS</li>
             </ul>
-            <button onclick="logout()">Log out</button>
+            <button class="btn btn-error" onclick="logout()">Log out</button>
         </div>
         <div class="d-flex flex-column" style="width: 70%; height: 100%">
             <div class="header">
-                <h2 id="chatTitle">Chat</h2>
+                <h2 id="chatTitle" class="text-white">Enter a Room</h2>
             </div>
-            <div class="messages">
+            <div class="messages bg-light rounded p-1">
                 <div id="messageList" class="d-flex flex-column">
                     <p>No Messages</p>
                 </div>
             </div>
-            <p id="user_typing"></p>
+            <p id="user_typing" class="text-white"></p>
             <div id="input-bar">
                 <input onchange="handleChange()" class="form-control" type="text" id="userInput" placeholder="Enter a message">
                 <button onclick="sendMessage()" class="btn btn-primary">Send</button>
@@ -41,13 +40,16 @@
         </div>
     </div>
     <script>
+        // div to show online users
         const users = document.getElementById("users");
         const client = io();
+        // storing logged in user in memory
         const currentUser = {
             userId: localStorage.getItem("labtest01_token"),
             username: localStorage.getItem("labtest01_username")
         };
 
+        // storing information of room that user is in
         let chatState = {
             type: null,
             to: null,
@@ -55,6 +57,7 @@
             messages: []
         };
 
+        // functionality for "User is typing..."
         function handleChange() {
             if (chatState.type == "private") {
                 console.log("value is changing...");
@@ -65,12 +68,14 @@
             }
         }
 
+        // functionality to join room. cannot join same room twice
         function joinRoom(roomName, to, type) {
             if (roomName != chatState.roomName) {
                 client.emit("join_room", {roomName, to, type});
             }
         }
 
+        // functionality to log out, emits custom event, clears session, redirects to login
         function logout() {
             client.emit('logout', currentUser.clientId);
             client.close();
@@ -79,15 +84,20 @@
             window.location.replace("http://localhost:3000/login");
         }
 
+        // initialize connection, use custom login event
         client.on('connect', (data) => {
             currentUser.clientId = client.id;
             console.log("Connected to server");
             client.emit("login", currentUser);
         })
 
+        // dynamically update list of online users
         client.on("update_clients", (data) => {
             updateUsers(data);
         })
+        
+        // update state after joining room
+        // dynamically update messages
         client.on("joined_room", (data) => {
             chatState.type = data.type,
             chatState.to = data.to,
@@ -101,11 +111,14 @@
                 })
             }
         })
+
+        // trigger rerender of messages
         client.on("new_message", (data) => {
             chatState.messages.push(data);
             updateMessages(data);
         });
 
+        // function to dynamically rerender messages
         function updateMessages(data) {
             let messageList = document.getElementById("messageList");
             if (chatState.messages.length == 0) {
@@ -116,18 +129,20 @@
                 let classes = `${m.from_user == currentUser.username ? "align-items-end" : "align-items-start"} d-flex flex-column`
                 s = `<div class="${classes}">`;
                 s += `<p class="font-weight-light">${m.from_user}</p>`;
-                s += `<p class="${m.from_user == currentUser.username ? "bg-secondary" : "bg-info"} rounded p-1">${m.message}</p>`;
+                s += `<p class="text-white ${m.from_user == currentUser.username ? "bg-secondary" : "bg-info"} rounded p-1">${m.message}</p>`;
                 s += "</div>"
                 return s;
             });
             messageList.innerHTML = messageHTML.join(" ");
         }
+
+        // function to dynamically rerender list of online users
         function updateUsers(data) {
             let userComponents = data.map(u => {
                 if (u.username != currentUser.username) {
                     let roomName = [currentUser.username, u.username].sort().join("_");
                     let to = u.username;
-                    let classes = "d-flex justify-content-center align-items-center btn btn-primary w-50"
+                    let classes = "d-flex justify-content-center align-items-center btn btn-primary w-50 py-1"
                     s = `<div onclick="joinRoom('${roomName}', '${to}', 'private')" class="${classes}">`;
                     s += `<p>${u.username}</p>`;
                     s += "</div>";
@@ -137,6 +152,8 @@
             });
             document.getElementById("users").innerHTML = userComponents.join(" ");
         }
+
+        // function to emit new message request to server
         function sendMessage() {
             let message = document.getElementById("userInput").value;
             if (chatState.type && chatState.roomName && chatState.to) {

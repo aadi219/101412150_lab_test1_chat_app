@@ -5,14 +5,17 @@ import path from "path";
 const router = Router();
 const dirname = path.resolve(path.dirname(''));
 
+// serve html page for signup
 router.get("/signup", (req, res) => {
     res.sendFile(dirname + "/view/signup.html");
 })
 
+// serve html page for login 
 router.get("/login", (req, res) => {
     res.sendFile(dirname + "/view/login.html");
 })
 
+// register new user
 router.post("/signup", async (req, res) => {
     const {username, firstname, lastname, password} = req.body;
     try {
@@ -27,6 +30,7 @@ router.post("/signup", async (req, res) => {
     }
 });
 
+// authenticate user
 router.post("/login", async (req, res) => {
     console.log(req.body);
     const {username, password} = req.body;

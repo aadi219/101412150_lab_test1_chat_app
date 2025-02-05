@@ -15,14 +15,17 @@ function handleSignup(e) {
 }
 
 function signup(user) {
+    // make request to backend signup endpoint
     fetch("http://localhost:3000/signup", {
         method: "POST",
         headers: {
             'Content-Type': 'application/json'
         },
+        // pass user details in body
         body: JSON.stringify(user)
     }).then(res => {
         if (res.status == 201) {
+            // if successful response -> redirect to login
             window.location.replace("http://localhost:3000/login");
         }
         else {
