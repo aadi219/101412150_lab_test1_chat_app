@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Rooms</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Hello From chat rooms!</h1>
+    <div class="d-flex flex-row">
+        <div style="width: 30%; height: 100%">
+            <h2>Online Users</h2>
+            <div id="users">
+            </div>
+            <h2>Groups</h2>
+            <ul class="d-flex flex-column">
+                <li class="btn btn-success" onclick="joinRoom('devops', 'devops', 'group')">Devops</li>
+                <li class="btn btn-success" onclick="joinRoom('cloud_computing', 'cloud_computing', 'group')">Cloud Computing</li>
+                <li class="btn btn-success" onclick="joinRoom('covid19', 'covid19', 'group')">Covid19</li>
+                <li class="btn btn-success" onclick="joinRoom('sports', 'sports', 'group')">Sports</li>
+                <li class="btn btn-success" onclick="joinRoom('nodejs', 'nodejs', 'group')">NodeJS</li>
+            </ul>
+            <button onclick="logout()">Log out</button>
+        </div>
+        <div class="d-flex flex-column" style="width: 70%; height: 100%">
+            <div class="header">
+                <h2 id="chatTitle">Chat</h2>
+            </div>
+            <div class="messages">
+                <div id="messageList" class="d-flex flex-column">
+                    <p>No Messages</p>
+                </div>
+            </div>
+            <p id="user_typing"></p>
+            <div id="input-bar">
+                <input onchange="handleChange()" class="form-control" type="text" id="userInput" placeholder="Enter a message">
+                <button onclick="sendMessage()" class="btn btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const users = document.getElementById("users");
+        const client = io();
+        const currentUser = {
+            userId: localStorage.getItem("labtest01_token"),
+            username: localStorage.getItem("labtest01_username")
+        };
+
+        let chatState = {
+            type: null,
+            to: null,
+            roomName: null,
+            messages: []
+        };
+
+        function handleChange() {
+            if (chatState.type == "private") {
+                console.log("value is changing...");
+                client.emit("user_typing", {
+                    username: currentUser.username,
+                    roomName: chatState.roomName
+                });
+            }
+        }
+
+        function joinRoom(roomName, to, type) {
+            if (roomName != chatState.roomName) {
+                client.emit("join_room", {roomName, to, type});
+            }
+        }
+
+        function logout() {
+            client.emit('logout', currentUser.clientId);
+            client.close();
+            localStorage.removeItem("labtest01_token");
+            localStorage.removeItem("labtest01_username");
+            window.location.replace("http://localhost:3000/login");
+        }
+
+        client.on('connect', (data) => {
+            currentUser.clientId = client.id;
+            console.log("Connected to server");
+            client.emit("login", currentUser);
+        })
+
+        client.on("update_clients", (data) => {
+            updateUsers(data);
+        })
+        client.on("joined_room", (data) => {
+            chatState.type = data.type,
+            chatState.to = data.to,
+            chatState.roomName = data.roomName;
+            chatState.messages = data.messages;
+            updateMessages(chatState.messages);
+            document.getElementById("chatTitle").innerHTML = chatState.roomName;
+            if (chatState.type == "private") {
+                client.on("user_typing", (username) => {
+                    document.getElementById("user_typing").innerHTML = username + " is typing...";
+                })
+            }
+        })
+        client.on("new_message", (data) => {
+            chatState.messages.push(data);
+            updateMessages(data);
+        });
+
+        function updateMessages(data) {
+            let messageList = document.getElementById("messageList");
+            if (chatState.messages.length == 0) {
+                messageList.innerHTML = "No messages found";
+                return;
+            }
+            let messageHTML = chatState.messages.map(m => {
+                let classes = `${m.from_user == currentUser.username ? "align-items-end" : "align-items-start"} d-flex flex-column`
+                s = `<div class="${classes}">`;
+                s += `<p class="font-weight-light">${m.from_user}</p>`;
+                s += `<p class="${m.from_user == currentUser.username ? "bg-secondary" : "bg-info"} rounded p-1">${m.message}</p>`;
+                s += "</div>"
+                return s;
+            });
+            messageList.innerHTML = messageHTML.join(" ");
+        }
+        function updateUsers(data) {
+            let userComponents = data.map(u => {
+                if (u.username != currentUser.username) {
+                    let roomName = [currentUser.username, u.username].sort().join("_");
+                    let to = u.username;
+                    let classes = "d-flex justify-content-center align-items-center btn btn-primary w-50"
+                    s = `<div onclick="joinRoom('${roomName}', '${to}', 'private')" class="${classes}">`;
+                    s += `<p>${u.username}</p>`;
+                    s += "</div>";
+                    return s;
+                }
+                return "";
+            });
+            document.getElementById("users").innerHTML = userComponents.join(" ");
+        }
+        function sendMessage() {
+            let message = document.getElementById("userInput").value;
+            if (chatState.type && chatState.roomName && chatState.to) {
+                client.emit("new_message", {
+                    message: message,
+                    type: chatState.type,
+                    from_user: currentUser.username,
+                    roomName: chatState.roomName,
+                    to: chatState.to
+                });
+                console.log("sent message from client");
+            }
+                else {
+                    console.log("chat state not set");
+                }
+            }
+    </script>
+</body>
+</html>
