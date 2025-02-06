@@ -8,7 +8,7 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <div class="d-flex flex-row bg-dark" style="height:100vh;">
+    <div class="d-flex flex-row bg-dark p-2" style="height:100vh;">
         <div style="width: 30%; height: 100%" class="mx-2">
             <h2 class="text-white">Online Users</h2>
             <div id="users">
@@ -21,7 +21,7 @@
                 <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('sports', 'sports', 'group')">Sports</li>
                 <li style="width: 70%;" class="btn btn-success" onclick="joinRoom('nodejs', 'nodejs', 'group')">NodeJS</li>
             </ul>
-            <button class="btn btn-error" onclick="logout()">Log out</button>
+            <button class="btn btn-danger" onclick="logout()">Log out</button>
         </div>
         <div class="d-flex flex-column" style="width: 70%; height: 100%">
             <div class="header">
@@ -33,8 +33,8 @@
                 </div>
             </div>
             <p id="user_typing" class="text-white"></p>
-            <div id="input-bar">
-                <input onchange="handleChange()" class="form-control" type="text" id="userInput" placeholder="Enter a message">
+            <div id="input-bar" class="d-flex flex-row gap-1">
+                <input onchange="handleChange()" class="flex-grow-1 form-control" type="text" id="userInput" placeholder="Enter a message">
                 <button onclick="sendMessage()" class="btn btn-primary">Send</button>
             </div>
         </div>
@@ -107,7 +107,11 @@
             document.getElementById("chatTitle").innerHTML = chatState.roomName;
             if (chatState.type == "private") {
                 client.on("user_typing", (username) => {
-                    document.getElementById("user_typing").innerHTML = username + " is typing...";
+                    let userTyping = document.getElementById("user_typing");
+                    userTyping.innerHTML = username + " is typing...";
+                    setTimeout(() => {
+                        userTyping.innerHTML = "";
+                    }, 5000);
                 })
             }
         })
